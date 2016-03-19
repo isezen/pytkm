@@ -10,6 +10,7 @@ __pycache__/
 .Python
 static_files/
 Database/
+database/
 env/
 build/
 develop-eggs/
