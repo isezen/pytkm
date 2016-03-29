@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 """This script downloads traffic data from tkm.ibb.gov.tr"""
 
+import sys
+reload(sys)
+sys.setdefaultencoding("utf-8")
 
 import logging as log
 import os
@@ -54,6 +57,8 @@ def __init__():
             ([joinp(main_url, static_files_url, fn) for fn in fl_road],
              [joinp(main_url, static_files_url, fn) for fn in fl_other])))
     return _url, _dir
+
+
 URL, DIR = __init__()
 
 # endregion
@@ -489,6 +494,7 @@ def save_static_files():
         log.error(err)
     finally:
         pass
+
 
 # endregion
 
