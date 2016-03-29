@@ -1,0 +1,10 @@
+[Unit]
+Description=TKM Service
+After=multi-user.target
+
+[Service]
+Type=idle
+ExecStart=/opt/anaconda2/bin/python /home/isezen/proj/pytkm/tkm.py
+
+[Install]
+WantedBy=multi-user.target
