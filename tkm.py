@@ -1,4 +1,4 @@
-#!/usr/bin/env python # noqa
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """This script downloads traffic data from tkm.ibb.gov.tr"""
 
