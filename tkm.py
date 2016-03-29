@@ -214,7 +214,7 @@ def _get_data(url, key=None):
         _data = url_handle.read()
 
         _data = td.decrypt0(_data, _key) if _key else td.decrypt2(_data)
-        if _data == 'error':
+        if _data == 'error' or _data == 'no_data':
             if k < 5:
                 k += 1
                 log.error('Server returned ERROR. Retrying [%d]', [k])
