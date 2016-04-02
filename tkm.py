@@ -88,7 +88,7 @@ def _write_to_file(f, data, last_modified, e_tag=None):
     if e_tag:  # if e_tag exists, add to filename
         f = _add_e_tag(f, e_tag)
     write_type = 'wb' if e_tag else 'a'
-    with open(f, write_type) as fl: fl.write(data)
+    with open(f, write_type) as fl: fl.write(data.encode("UTF-8"))
     # change creation and last modified datetime of file.
     os.utime(f, (time.mktime(_now().timetuple()),
                  time.mktime(last_modified.timetuple())))
