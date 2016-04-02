@@ -82,8 +82,9 @@ def test_get_announcements():
     assert b is None
     assert ['AnnouncementData', _e_tag, 'csv'] == c.split('.')
     assert isinstance(d, unicode)
-    str_list = u"\xfcj\u011f! \xc7'0)(-,/.1\u013032547698:ACBEDGPHKvMONgSR" + \
-               u"UTWVYZ\u015f\u015ea&cbed\xe7fihk\u0131mlonpsrutw\xf6yz|"
+    str_list = u"\u0131L\u011f! G'0)(-,/.1\u013032547698:ACBED" + \
+               u"\xc7FHK\xf6M\xe7ONPSRUTWVYZ\u015f\u015ea&cbed" + \
+               u"gfihkjmlonpsrutwvyz\xfc|"
     assert all(i in str_list for i in d)
 
 
@@ -94,8 +95,7 @@ def test_get_weather_data():
     assert b is None
     assert ['WeatherData', _e_tag, 'csv'] == c.split('.')
     assert isinstance(d, unicode)
-    str_list = u'\xfc\u011f &-,.1032547698:ABDGHK\xf6ONSUVY\u015fae\xe7gfi' + \
-               u'hk\u0131mlonsrutvyz|'
+    str_list = u'\u011f &-,.1032547698:ABDGHKvONPSUVY\u015faeg\xe7fihk\u0131mlonsrut\xf6yz\xfc|'
     assert all(i in str_list for i in d)
 
 
