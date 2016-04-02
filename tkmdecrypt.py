@@ -3,6 +3,7 @@
 """This is decryption module for tkm.py"""
 
 from array import array
+import numpy as np
 
 # region Constants
 _REF_TABLE_1 = array('i', (
@@ -148,15 +149,16 @@ def decrypt2(encrypted_text):
     :return: Decrypted Text
     """
     # this function is faster for big encrypted_text
-    in_bytes = array('b', encrypted_text)
-    key, c1, c2, l = 3, 6, 3, len(in_bytes)
-    ii1 = [i - 55 if i > 57 else i - 48 for i in in_bytes[c1:l:2]]
-    ii2 = [i - 55 if i > 57 else i - 48 for i in in_bytes[(c1+1):l:2]]
-    ii1 = [(i << 4)+j for i, j in zip(ii1, ii2)]
-    cc2 = [key + (i & 15) for i in range(c2, len(ii1)+c2)]
-    ii1 = [i ^ j for i, j in zip(ii1, [_REF_TABLE_1[i] for i in cc2])]
-    clear_text = str(bytearray([_REF_TABLE_2[i] for i in ii1]))
-    return clear_text
+    def f(x):return x - 55 if x > 57 else x - 48
+    f = np.vectorize(f, otypes=[np.uint8])
+
+    ibyte = np.fromstring(encrypted_text, dtype = 'uint8')
+    key, c1, c2, l = 3, 6, 3, len(ibyte)
+    ii1 = (f(ibyte[c1:l:2]) << 4) + f(ibyte[(c1+1):l:2])
+    cc2 = (np.arange(c2, len(ii1)+c2) & 15) + key
+    rt1 = np.array(_REF_TABLE_1, dtype='int8')
+    rt2 = np.array(_REF_TABLE_2, dtype='int8')
+    return rt2[ii1 ^ rt1[cc2]].tostring()
 
 
 def decrypt2_old(encrypted_text):
