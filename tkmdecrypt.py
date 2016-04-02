@@ -22,6 +22,7 @@ _REF_TABLE_1 = array('i', (
     180, 202, 73, 191, 97, 57, 210, 146, 236, 207, 147, 177, 215, 223, 170, 25,
     214, 38, 252, 137, 254, 52, 208, 196, 0, 4, 13, 138, 212, 117, 165, 179,
     106, 119, 224, 134, 168, 199, 204, 17, 157, 251, 187, 185, 92))
+
 _REF_TABLE_2 = array('i', (
     235, 176, 50, 29, 236, 174, 75, 170, 171, 178, 186, 160, 148, 237, 199,
     141, 124, 250, 106, 47, 21, 45, 135, 175, 189, 226, 210, 84, 144, 181, 201,
@@ -146,6 +147,26 @@ def decrypt2(encrypted_text):
     :param encrypted_text: Encrypted text
     :return: Decrypted Text
     """
+    # this function is faster for big encrypted_text
+    in_bytes = array('b', encrypted_text)
+    key, c1, c2, l = 3, 6, 3, len(in_bytes)
+    ii1 = [i - 55 if i > 57 else i - 48 for i in in_bytes[c1:l:2]]
+    ii2 = [i - 55 if i > 57 else i - 48 for i in in_bytes[(c1+1):l:2]]
+    ii1 = [(i << 4)+j for i, j in zip(ii1, ii2)]
+    cc2 = [key + (i & 15) for i in range(c2, len(ii1)+c2)]
+    ii1 = [i ^ j for i, j in zip(ii1, [_REF_TABLE_1[i] for i in cc2])]
+    clear_text = str(bytearray([_REF_TABLE_2[i] for i in ii1]))
+    return clear_text
+
+
+def decrypt2_old(encrypted_text):
+    """Decrypt an encrypted text.
+
+    This function is used to decrypt static files.
+    :type encrypted_text: str
+    :param encrypted_text: Encrypted text
+    :return: Decrypted Text
+    """
     in_bytes = [ord(i) for i in encrypted_text]
     out_bytes = bytearray(len(in_bytes))
     key, c1, c2 = 3, 6, 3
@@ -162,6 +183,6 @@ def decrypt2(encrypted_text):
         out_bytes[c2 - 3] = i1
         c2 += 1
     clear_text = str(out_bytes)
-    return clear_text[:clear_text.find('\x00')].decode()
+    return clear_text[:clear_text.find('\x00')]
 
 # endregion
