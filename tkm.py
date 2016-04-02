@@ -194,8 +194,7 @@ def _static_file_compare_last_modified(url):
 def _get_data(url, key=None, decrypt=True):
     """Download/Get and decrypts data from tkm web site.
 
-    :param url: Full url to data or a StaticFile Object or
-                a tuple from _urlopen()
+    :param url: Full url to data or a tuple from _urlopen()
     :param key: Encryption key
     :return: TKM_DATA object
     :type url: str or tuple
@@ -203,16 +202,8 @@ def _get_data(url, key=None, decrypt=True):
     :rtype: TKM_DATA
     """
     def _get_data_internal(_url, _key, k=0):
-        if isinstance(_url, tuple):
-            url_handle, _last_modified, _e_tag, _f_e_tag = _url
-        else:
-            if isinstance(_url, str):
-                _url = _url
-            elif type(_url).__name__ == 'StaticFile':
-                _url = _url[2]
-            else:
-                return None
-            url_handle, _last_modified, _e_tag, _f_e_tag = _urlopen(_url)
+        url_handle, _last_modified, _e_tag, _f_e_tag = _url \
+        if isinstance(_url, tuple) else _urlopen(_url)
 
         if not _e_tag:  # make sure second = 00
             t = list(_now().timetuple())
@@ -224,7 +215,8 @@ def _get_data(url, key=None, decrypt=True):
         if url_handle:
             _data = url_handle.read()
             if decrypt:
-                _data = td.decrypt0(_data, _key) if _key else td.decrypt2(_data)
+                _data = td.decrypt0(_data, _key) \
+                if _key else td.decrypt2(_data)
 
             if _data == 'error' or _data == 'no_data':
                 if k < 5:
@@ -257,7 +249,7 @@ def _get_static_file_data_if_modified(url):
     latter if last modified dates are different, downloads the remote file
     and compares to local one.
 
-    :param url: url of remote file or StaticFile object
+    :param url: url of remote file
     :return: remote file data if modified else None
     :rtype: TKM_DATA
     """
