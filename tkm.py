@@ -191,7 +191,7 @@ def _static_file_compare_last_modified(url):
     return ret
 
 
-def _get_data(url, key=None):
+def _get_data(url, key=None, decrypt=True):
     """Download/Get and decrypts data from tkm web site.
 
     :param url: Full url to data or a StaticFile Object or
@@ -223,7 +223,9 @@ def _get_data(url, key=None):
 
         if url_handle:
             _data = url_handle.read()
-            _data = td.decrypt0(_data, _key) if _key else td.decrypt2(_data)
+            if decrypt:
+                _data = td.decrypt0(_data, _key) if _key else td.decrypt2(_data)
+
             if _data == 'error' or _data == 'no_data':
                 if k < 5:
                     k += 1
