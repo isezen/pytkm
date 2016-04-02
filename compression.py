@@ -7,7 +7,7 @@ import pylzma
 import zipfile as zipf
 
 
-def compress(f, big_data=False, f_type='7z'):
+def compress(f, rename_to=None, big_data=False, f_type='7z'):
     """
     Compresses a file. Optimized for csv files.
 
@@ -19,13 +19,18 @@ def compress(f, big_data=False, f_type='7z'):
     :type big_data: bool
     :type f: str
     """
-    if f_type == '7z':
+    f_types = ['7z', 'zip']
+    if f_type not in f_types:
+        raise ValueError("f_type must be one of %s" % f_types)
+
+    fn = f if rename_to is None else rename_to
+    fn = fn + '.' + f_type
+    if f_type == f_types[0]:
         import struct
         with open(f, "rb") as f1:
             c =pylzma.compressfile(f1, literalContextBits=4, eos=0,
                                    dictionary=24, fastBytes=255)
             result = c.read(5) + struct.pack('<Q', os.path.getsize(f))
-            fn = f +'.7z'
             with open(fn, 'wb') as f2: f2.write(result)
             with open(fn, 'ab') as f2:
                 if big_data:
@@ -35,13 +40,15 @@ def compress(f, big_data=False, f_type='7z'):
                         f2.write(tmp)
                 else:
                     f2.write(c.read())
-    elif f_type == 'zip':
+    elif f_type == f_types[1]:
         # http://stackoverflow.com/questions/14568647/create-zip-in-python?rq=1
-        with zipf.ZipFile(f +'.zip', 'w', zipf.ZIP_DEFLATED) as z:
-            z.write(f, os.path.basename(f))
+        with zipf.ZipFile(fn, 'w', zipf.ZIP_DEFLATED) as z:
+            f2 = os.path.splitext(fn)[0] + os.path.splitext(f)[1]
+            z.write(f, os.path.basename(f2))
+    return fn
 
 
-def decompress(f):
+def decompress(f, rename_to=None):
     """
     Decompress a compressed file by the extension.
     Only supports .7z and .zip files.
@@ -49,13 +56,25 @@ def decompress(f):
     :type f: str
     :param f: Full path to file
     """
+    f_types = ['.7z', '.zip']
     fn, ext = os.path.splitext(f)
-    if ext == '.7z':
+    if ext not in f_types:
+        raise ValueError("f extension must be one of %s" % f_types)
+    fn = fn if rename_to is None else rename_to
+    if ext == f_types[0]:
         with open(f, "rb") as fl: cdata = fl.read()
         with open(fn, 'wb') as fl:
             fl.write(pylzma.decompress_compat(cdata[0:5] + cdata[13:]))
-    elif ext == '.zip':
-        with zipf.ZipFile(f) as z: z.extractall(os.path.dirname(f))
+    elif ext == f_types[1]:
+        with zipf.ZipFile(f) as z:
+            p = os.path.dirname(f)
+            z.extractall(p)
+            fn = z.namelist()
+            fn = [os.path.join(p, i) for i in fn]
+            if len(fn) == 1:
+                fn = fn[0]
+            # z.extractall(os.path.dirname(f))
+    return fn
 
 
 def read_from_zip(f):
