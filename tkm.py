@@ -2,10 +2,6 @@
 # -*- coding: utf-8 -*-
 """This script downloads traffic data from tkm.ibb.gov.tr"""
 
-import sys
-reload(sys)
-sys.setdefaultencoding("utf-8")
-
 import logging as log
 import os
 from os import path
@@ -92,7 +88,7 @@ def _write_to_file(f, data, last_modified, e_tag=None):
     if e_tag:  # if e_tag exists, add to filename
         f = _add_e_tag(f, e_tag)
     write_type = 'wb' if e_tag else 'a'
-    with open(f, write_type) as fl: fl.write(data.encode("UTF-8"))
+    with open(f, write_type) as fl: fl.write(data)
     # change creation and last modified datetime of file.
     os.utime(f, (time.mktime(_now().timetuple()),
                  time.mktime(last_modified.timetuple())))
@@ -127,18 +123,31 @@ def _static_file_get_modified_time(f):
     return None
 
 
-def _urlopen(url):
+def _urlopen(url, k=0):
     """Send a request to url.
 
     :param url: Url to open
+    :param k: Only for internal use
     :return: (url_handle, local_last_modified, e_tag)
     :rtype: tuple
     """
-    url_handle = ul.urlopen(ul.Request(url))
-    h = url_handle.info()
-    # this value changes if file at url is modified
-    e_tag = h.getheader("ETag")
     file_with_e_tag = path.basename(url)
+    try:
+        url_handle = ul.urlopen(ul.Request(url))
+    except ul.HTTPError, e:
+        if k < 5:
+            k += 1
+            log.error('%s -> %s Retrying [%d]', file_with_e_tag, str(e), k)
+            return _urlopen(url, k)
+        else:
+            url_handle = None
+            log.error('%s -> %s STOPPED', file_with_e_tag, str(e))
+    if url_handle:
+        h = url_handle.info()
+        # this value changes if file at url is modified
+        e_tag = h.getheader("ETag")
+    else:
+        h = e_tag = None
     if e_tag:
         e_tag = e_tag.replace('"', '')  # WTF?
         e_tag = e_tag.replace(':', '').upper()  # make e_tag filename friendly
@@ -151,8 +160,7 @@ def _urlopen(url):
         file_with_e_tag = _add_e_tag(file_with_e_tag, e_tag)
     else:  # if e_tag value is None, do not trust to last modified date.
         local_last_modified = _now()
-        file_with_e_tag = _add_e_tag(file_with_e_tag,
-                                     _now().strftime('%Y%m%d'))
+        file_with_e_tag = _add_e_tag(file_with_e_tag, _now().strftime('%Y%m%d'))
         file_with_e_tag = path.splitext(file_with_e_tag)[0] + '.csv'
     return url_handle, local_last_modified, e_tag, file_with_e_tag
 
@@ -205,29 +213,37 @@ def _get_data(url, key=None):
             else:
                 return None
             url_handle, _last_modified, _e_tag, _f_e_tag = _urlopen(_url)
+
         if not _e_tag:  # make sure second = 00
             t = list(_now().timetuple())
             t[5] = 0
             _last_modified = dt.fromtimestamp(
                 time.mktime(
                     time.struct_time(t))).replace(tzinfo=tz.tzlocal())
-        _data = url_handle.read()
 
-        _data = td.decrypt0(_data, _key) if _key else td.decrypt2(_data)
-        if _data == 'error' or _data == 'no_data':
-            if k < 5:
-                k += 1
-                log.error('Server returned ERROR. Retrying [%d]', [k])
-                (_data, _e_tag, _f_e_tag, _last_modified,
-                 k) = _get_data_internal(_url, _key, k)
-            else:
-                _data = 'NA'
-                log.error('Server returned ERROR. Data was saved as NA')
+        if url_handle:
+            _data = url_handle.read()
+            _data = td.decrypt0(_data, _key) if _key else td.decrypt2(_data)
+            if _data == 'error' or _data == 'no_data':
+                if k < 5:
+                    k += 1
+                    log.error('Server returned ERROR. Retrying [%d]', [k])
+                    (_data, _e_tag, _f_e_tag, _last_modified,
+                     k) = _get_data_internal(_url, _key, k)
+                else:
+                    _data = 'NA'
+        else:
+            _data = 'NA'
+
+        if _data == 'NA':
+            log.error('%s -> Server ERROR. Data was saved as NA',
+                      path.basename(_url))
         return _data, _e_tag, _f_e_tag, _last_modified, k
 
     (data, e_tag, f_e_tag, last_modified, _) = _get_data_internal(url, key)
     data = data.replace('\r\n', '').replace(';', '|').replace('|&', '&')
-    if data[len(data) - 1] == u'&': data = data[:len(data) - 1]
+    if len(data) > 0:
+        if data[len(data) - 1] == '&': data = data[:len(data) - 1]
     return TKM_DATA(date=last_modified, e_tag=e_tag,
                     filename=f_e_tag, data=data)
 
@@ -338,7 +354,10 @@ def download_static_files(url_list=URL.road + URL.other):
     """
     if isinstance(url_list, str): url_list = [url_list]
     if not [t for t in [_static_file_download(u) for u in url_list] if t]:
-        log.info('All Static Files are up-to-date.')
+        if '_logged' not in globals(): # log once per session
+            log.info('All Static Files are up-to-date.')
+            globals()['_logged'] = 1
+
 
 
 def download_roads():
@@ -419,13 +438,6 @@ def save_instant_data(tkmd):
     f = joinp(DIR.data, tkmd.filename)
     data = tkmd.date.strftime("%Y-%m-%d %H:%M:%S") + ';' + tkmd.data + '\r\n'
     _write_to_file(f, data, tkmd.date)
-
-
-# def diff_roads(n1, n2):
-#     s1 = np.unique(read_road_segments(n1).ix[:, 0])
-#     s2 = np.unique(read_road_segments(n2).ix[:, 0])
-#     if len(s2) > len(s1): s1, s2 = s2, s1
-#     return np.asarray(list(set(s1) - set(s2)))
 
 
 def save_traffic_data():
