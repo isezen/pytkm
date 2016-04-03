@@ -3,8 +3,8 @@
 """Compression utility for 7z and zip files. Optimized for csv files."""
 
 import os
-import pylzma
 import zipfile as zipf
+import pylzma
 
 
 def compress(f, rename_to=None, big_data=False, f_type='7z'):
@@ -71,9 +71,7 @@ def decompress(f, rename_to=None):
             z.extractall(p)
             fn = z.namelist()
             fn = [os.path.join(p, i) for i in fn]
-            if len(fn) == 1:
-                fn = fn[0]
-            # z.extractall(os.path.dirname(f))
+            if len(fn) == 1:fn = fn[0]
     return fn
 
 
