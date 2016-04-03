@@ -16,6 +16,7 @@ from datetime import datetime as dt
 from dateutil import tz
 
 import tkmdecrypt as td
+import compression as c
 
 # region initial definitions
 
@@ -502,7 +503,26 @@ def save_static_files():
         pass
 
 
+def compress_files():
+    """Compresses downloaded data files.
+
+    This function starts a thread.
+    """
+    t = threading.Timer(10800, compress_files)
+    t.daemon = True
+    t.start()
+    lcsv = [f for f in os.listdir(DIR.data) if f.endswith('.csv')]
+    today_e_tag = _now().strftime('%Y%m%d')
+    for f in lcsv:
+        ff = os.path.join(DIR.data, f)
+        if today_e_tag not in ff:
+            c.compress(ff)
+            log.info('%s compressed.' % os.path.basename(ff))
+            os.remove(ff)
+
+
 # endregion
+
 
 if __name__ == "__main__":
     log.info('-------------------------------------------------------------')
@@ -515,5 +535,6 @@ if __name__ == "__main__":
             save_traffic_index()
             save_weather_data()
             save_static_files()
+            compress_files()
             _check_for_stop()
             break
