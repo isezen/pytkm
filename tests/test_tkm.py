@@ -1,7 +1,7 @@
 #!/usr/bin/python # noqa
 # -*- coding: utf-8 -*-
 # pylint: disable=W0212
-"""Test module for tkmdecrypt.py"""
+"""Test module for tkm.py"""
 
 import tkm # pylint: disable=E0401
 from datetime import datetime
@@ -11,6 +11,16 @@ _url_not_found = _url_main + '/notfound.html'
 _url_static_file = _url_main + '/YHarita/res/r0.txt'
 _url_traffic_indx = _url_main + '/data/IntensityMap/TrafficIndex.aspx'
 _e_tag = tkm._now().strftime('%Y%m%d')
+
+
+def get_diff(x, y):
+    from itertools import compress
+    x = ''.join(set(x))
+    r = list(compress(x, [i not in y for i in x]))
+    if len(r):
+        s = ','.join('[{0}]'.format(i) for i in r)
+        raise ValueError(u"str_list requires -> %s" % s)
+
 
 def test_tkm_add_e_tag():
     a = tkm._add_e_tag('abc', '123')
@@ -82,10 +92,9 @@ def test_get_announcements():
     assert b is None
     assert ['AnnouncementData', _e_tag, 'csv'] == c.split('.')
     assert isinstance(d, unicode)
-    str_list = u"\u0131L\u011f! G'0)(-,/.1\u013032547698:ACBED" + \
-               u"\xc7FHK\xf6M\xe7ONPSRUTWVYZ\u015f\u015ea&cbed" + \
-               u"gfihkjmlonpsrutwvyz\xfc|"
-    assert all(i in str_list for i in d)
+    str_list = u'abcçdefgğhıijklmnoöprsştuüvwyz' + \
+               u'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVWYZ 0123456789-:.,&|!\'()/'
+    get_diff(d, str_list)
 
 
 def test_get_weather_data():
@@ -95,7 +104,6 @@ def test_get_weather_data():
     assert b is None
     assert ['WeatherData', _e_tag, 'csv'] == c.split('.')
     assert isinstance(d, unicode)
-    str_list = u'\u011f &-,.1032547698:ABDGHKvONPSUVY\u015faeg\xe7fihk\u0131mlonsrut\xf6yz\xfc|'
-    assert all(i in str_list for i in d)
-
-
+    str_list = u'abcçdefgğhıijklmnoöprsştuüvyz' + \
+               u'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ 0123456789-:.,&|'
+    get_diff(d, str_list)
