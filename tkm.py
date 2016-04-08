@@ -240,7 +240,7 @@ def _get_data(url, key=None, decrypt=True):
     if len(data) > 0:
         if data[len(data) - 1] == '&': data = data[:len(data) - 1]
     return TKM_DATA(date=last_modified, e_tag=e_tag,
-                    filename=f_e_tag, data=data)
+                    filename=f_e_tag, data=data.encode('utf-8'))
 
 
 def _get_static_file_data_if_modified(url):
