@@ -89,7 +89,7 @@ def _write_to_file(f, data, last_modified, e_tag=None):
     if e_tag:  # if e_tag exists, add to filename
         f = _add_e_tag(f, e_tag)
     write_type = 'wb' if e_tag else 'a'
-    with open(f, write_type) as fl: fl.write(data.encode("UTF-8"))
+    with open(f, write_type) as fl: fl.write(data)
     # change creation and last modified datetime of file.
     os.utime(f, (time.mktime(_now().timetuple()),
                  time.mktime(last_modified.timetuple())))
@@ -236,7 +236,7 @@ def _get_data(url, key=None, decrypt=True):
         return _data, _e_tag, _f_e_tag, _last_modified, k
 
     (data, e_tag, f_e_tag, last_modified, _) = _get_data_internal(url, key)
-    data = data.replace('\r\n', '').replace(';', '|').replace('|&', '&')
+    data = data.replace(';', '|').replace('|&', '&')
     if len(data) > 0:
         if data[len(data) - 1] == '&': data = data[:len(data) - 1]
     return TKM_DATA(date=last_modified, e_tag=e_tag,
