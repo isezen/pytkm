@@ -65,7 +65,8 @@ def test_get_traffic_index():
     assert isinstance(a, datetime)
     assert b is None
     assert ['TrafficIndex', _e_tag, 'csv'] == c.split('.')
-    assert isinstance(d, unicode)
+    assert isinstance(d, str)
+    assert d.decode('utf-8')
 
 
 def test_get_traffic_data():
@@ -73,27 +74,28 @@ def test_get_traffic_data():
     assert isinstance(a, datetime)
     assert b is None
     assert ['TrafficDataNew', _e_tag, 'csv'] == c.split('.')
-    assert isinstance(d, unicode)
+    assert isinstance(d, str)
     assert all(i in '0123456789|&' for i in d)
-
+    assert d.decode('utf-8')
 
 def test_get_parking_data():
     a, b, c, d = tkm.get_parking_data()
     assert isinstance(a, datetime)
     assert b is None
     assert ['ParkingLotData', _e_tag, 'csv'] == c.split('.')
-    assert isinstance(d, unicode)
+    assert isinstance(d, str)
     assert all(i in '0123456789&-~.: ' for i in d)
-
+    assert d.decode('utf-8')
 
 def test_get_announcements():
     a, b, c, d = tkm.get_announcements()
     assert isinstance(a, datetime)
     assert b is None
     assert ['AnnouncementData', _e_tag, 'csv'] == c.split('.')
-    assert isinstance(d, unicode)
-    str_list = u'abcçdefgğhıijklmnoöprsştuüvwyz' + \
-               u'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVWYZ 0123456789-:.,&|!\'()/'
+    assert isinstance(d, str)
+    assert d.decode('utf-8')
+    str_list = 'abcçdefgğhıijklmnoöprsştuüvwyz' + \
+               'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVWYZ 0123456789-:.,&|!\'()/'
     get_diff(d, str_list)
 
 
@@ -103,7 +105,8 @@ def test_get_weather_data():
     assert isinstance(a, datetime)
     assert b is None
     assert ['WeatherData', _e_tag, 'csv'] == c.split('.')
-    assert isinstance(d, unicode)
-    str_list = u'abcçdefgğhıijklmnoöprsştuüvyz' + \
-               u'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ 0123456789-:.,&|'
+    assert isinstance(d, str)
+    assert d.decode('utf-8')
+    str_list = 'abcçdefgğhıijklmnoöprsştuüvyz' + \
+               'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ 0123456789-:.,&|'
     get_diff(d, str_list)
