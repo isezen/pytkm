@@ -94,8 +94,8 @@ def test_get_announcements():
     assert ['AnnouncementData', _e_tag, 'csv'] == c.split('.')
     assert isinstance(d, str)
     assert d.decode('utf-8')
-    str_list = 'abcçdefgğhıijklmnoöprsştuüvwyz' + \
-               'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVWYZ 0123456789-:.,&|!\'()/'
+    str_list = 'abcçdefgğhıijklmnoöprsştuüvwxyz' + \
+               'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVWXYZ 0123456789-:.,&|!\'()/%\n'
     get_diff(d, str_list)
 
 
