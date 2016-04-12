@@ -95,7 +95,7 @@ def test_get_announcements():
     assert isinstance(d, str)
     assert d.decode('utf-8')
     str_list = 'abcçdefgğhıijklmnoöprsştuüvwxyz' + \
-               'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVWXYZ 0123456789-:.,&|!\'()/%\n'
+               'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVWXYZ 0123456789-_:.,&|!\'()/%\n'
     get_diff(d, str_list)
 
 
