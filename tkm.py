@@ -132,13 +132,17 @@ def _urlopen(url, k=0):
     :return: (url_handle, local_last_modified, e_tag)
     :rtype: tuple
     """
+    from socket import error as SocketError
+    import errno
+
     file_with_e_tag = path.basename(url)
     try:
         url_handle = ul.urlopen(ul.Request(url))
-    except ul.HTTPError, e:
+    # pylint: disable=W0703
+    except Exception as e:
         if k < 5:
             k += 1
-            log.error('%s -> %s Retrying [%d]', file_with_e_tag, str(e), k)
+            # log.error('%s -> %s Retrying [%d]', file_with_e_tag, str(e), k)
             return _urlopen(url, k)
         else:
             url_handle = None
@@ -222,7 +226,7 @@ def _get_data(url, key=None, decrypt=True):
             if _data == 'error' or _data == 'no_data':
                 if k < 5:
                     k += 1
-                    log.error('Server returned ERROR. Retrying [%d]', [k])
+                    # log.error('Server returned ERROR. Retrying [%d]', [k])
                     (_data, _e_tag, _f_e_tag, _last_modified,
                      k) = _get_data_internal(_url, _key, k)
                 else:
