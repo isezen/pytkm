@@ -137,7 +137,7 @@ def decrypt0(encrypted_text, key):
         l19 -= int(l10)
         l3 += _INT_TO_CHAR_TABLE.decode('utf-8')[l19]
 
-    return l3
+    return l3.encode('utf-8')
 
 
 def decrypt2(encrypted_text):
