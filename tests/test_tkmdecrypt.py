@@ -36,7 +36,7 @@ def test_tkmdecrypt_de_shuffle_hex_str():
 
 def test_tkmdecrypt_decrypt0():
     """Test decrypt0 function"""
-    assert td.decrypt0(_encrypted_traffic_index_data, "60413275") == u'8'
+    assert td.decrypt0(_encrypted_traffic_index_data, "60413275") == '8'
 
 
 def test_tkmdecrypt_decrypt2_and_old_2():
