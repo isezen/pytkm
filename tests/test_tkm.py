@@ -26,6 +26,17 @@ def test_tkm_add_e_tag():
     a = tkm._add_e_tag('abc', '123')
     assert a == 'abc.123'
 
+def test_static_file():
+    url = tkm.URL.road[0]
+    ret = tkm._urlopen(url)
+    a, b, c, d = tkm._get_data(ret)
+    assert isinstance(a, datetime)
+    assert isinstance(b, str)
+    assert isinstance(c, str)
+    assert ['r0', b, 'txt'] == c.split('.')
+    assert isinstance(d, str)
+
+
 def test_tkm_urlopen():
     a, b, c, d = tkm._urlopen(_url_traffic_indx)
     assert a.__class__.__name__ == 'addinfourl'
@@ -60,13 +71,13 @@ def test_get_data():
     assert ['notfound', _e_tag, 'csv'] == c.split('.')
     assert d == 'NA'
 
+
 def test_get_traffic_index():
     a, b, c, d = tkm.get_traffic_index()
     assert isinstance(a, datetime)
     assert b is None
     assert ['TrafficIndex', _e_tag, 'csv'] == c.split('.')
     assert isinstance(d, str)
-    assert d.decode('utf-8')
 
 
 def test_get_traffic_data():
@@ -76,7 +87,7 @@ def test_get_traffic_data():
     assert ['TrafficDataNew', _e_tag, 'csv'] == c.split('.')
     assert isinstance(d, str)
     assert all(i in '0123456789|&' for i in d)
-    assert d.decode('utf-8')
+
 
 def test_get_parking_data():
     a, b, c, d = tkm.get_parking_data()
@@ -85,7 +96,7 @@ def test_get_parking_data():
     assert ['ParkingLotData', _e_tag, 'csv'] == c.split('.')
     assert isinstance(d, str)
     assert all(i in '0123456789&-~.: ' for i in d)
-    assert d.decode('utf-8')
+
 
 def test_get_announcements():
     a, b, c, d = tkm.get_announcements()
@@ -93,7 +104,7 @@ def test_get_announcements():
     assert b is None
     assert ['AnnouncementData', _e_tag, 'csv'] == c.split('.')
     assert isinstance(d, str)
-    assert d.decode('utf-8')
+
     str_list = 'abcçdefgğhıijklmnoöprsştuüvwxyz' + \
                'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVWXYZ 0123456789-_:.,&|!\'()/%\n'
     get_diff(d, str_list)
@@ -106,7 +117,6 @@ def test_get_weather_data():
     assert b is None
     assert ['WeatherData', _e_tag, 'csv'] == c.split('.')
     assert isinstance(d, str)
-    assert d.decode('utf-8')
     str_list = 'abcçdefgğhıijklmnoöprsştuüvyz' + \
                'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ 0123456789-:.,&|'
     get_diff(d, str_list)
