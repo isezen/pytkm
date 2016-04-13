@@ -521,7 +521,7 @@ def compress_files():
         ff = os.path.join(DIR.data, f)
         if today_e_tag not in ff:
             c.compress(ff)
-            log.info('%s compressed.' % os.path.basename(ff))
+            log.info('%s compressed.', os.path.basename(ff))
             os.remove(ff)
 
 
