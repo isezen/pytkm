@@ -15,6 +15,8 @@ from collections import namedtuple as nt
 from datetime import datetime as dt
 from dateutil import tz
 
+from tendo import singleton
+
 import tkmdecrypt as td
 import compression as c
 
@@ -352,10 +354,10 @@ def download_static_files(url_list=URL.road + URL.other):
     :rtype: None
     """
     if isinstance(url_list, str): url_list = [url_list]
-    if not [t for t in [_static_file_download(u) for u in url_list] if t]:
-        if '_logged' not in globals(): # log once per session
-            log.info('All Static Files are up-to-date.')
-            globals()['_logged'] = 1
+    for u in url_list: _static_file_download(u)
+    if '_logged' not in globals(): # log once per session
+        log.info('All Static Files are up-to-date.')
+        globals()['_logged'] = 1
 
 
 
@@ -529,6 +531,7 @@ def compress_files():
 
 
 if __name__ == "__main__":
+    me = singleton.SingleInstance()
     log.info('-------------------------------------------------------------')
     log.info('Module started')
 
