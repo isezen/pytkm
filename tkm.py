@@ -18,8 +18,6 @@ from datetime import datetime as dt
 import datetime
 from dateutil import tz
 
-from tendo import singleton
-
 import tkmdecrypt as td
 import compression as c
 
@@ -35,6 +33,7 @@ TKM_DATA = nt('TkmData', 'date e_tag filename data')
 
 _stop_events = []
 _terminate = False
+_run_time = -1
 
 def __init__():
     _dir = nt('DirObject', 'cur data static')(
@@ -217,12 +216,8 @@ def _get_data(url, key=None, decrypt=True):
         url_handle, _last_modified, _e_tag, _f_e_tag = _url \
         if isinstance(_url, tuple) else _urlopen(_url)
 
-        if not _e_tag:  # make sure second = 00
-            t = list(_now().timetuple())
-            t[5] = 0
-            _last_modified = dt.fromtimestamp(
-                time.mktime(
-                    time.struct_time(t))).replace(tzinfo=tz.tzlocal())
+        if not _e_tag:
+            _last_modified = _run_time
 
         if url_handle:
             _data = url_handle.read()
@@ -286,20 +281,6 @@ def _static_file_download(url):
         log.info(info)
         print info
     return tkmd
-
-
-def _check_for_stop():
-    threading.Timer(10, _check_for_stop).start()
-    f = joinp(DIR.cur, 'killme')
-    if path.exists(f):
-        os.remove(f)
-        # make sure process will be stopped when threads finished.
-        while True:
-            sec = _now().second
-            if 2 < sec < 60:
-                log.info('Module terminated successfully')
-                # noinspection PyProtectedMember
-                os._exit(0)  # pylint: disable=W0212
 
 # endregion
 
@@ -579,73 +560,43 @@ def run_action(a):
         raise ValueError('selected action must be one of %s' % str(actions))
 
 
-class FuncThread(threading.Thread):
-    def __init__(self, target, *args):
-        self._target = target
-        self._args = args
-        threading.Thread.__init__(self)
-
-    def run(self):
-        self._target(*self._args)
-
-    def clone(self):
-        return FuncThread(self._target, self._args)
-
-
-class RunCmd(argparse.Action):
-    def __init__(self, **kwargs):
-        not_allowed = [i for i in
-                        ['nargs', 'const', 'default',
-                         'type', 'choices', 'required'] if i in kwargs]
-        if not_allowed:
-            raise ValueError("%s argument(s) not allowed" % str(not_allowed))
-        self.func = run_action
-        super(RunCmd, self).__init__(nargs=0, **kwargs)
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        # run_action(self.dest)
-        values = run_action
-        setattr(namespace, self.dest, values)
-
-
-def handler(signum, frame):
-    global _terminate
-    print "Termination requested"
-    for se in _stop_events: se.set()
-    _terminate = True
-
-
-def calc_run_on(run_on, delta = 0):
+def _calc_run_on(run_on, delta = 0):
     fmt = '%Y-%m-%d %H:%M:%S'
     if isinstance(run_on,str):
         l = len(run_on)
         t = _now().strftime(fmt)
         run_on = t[:-l] + run_on
         run_on = dt.strptime(run_on, fmt).replace(tzinfo=tz.tzlocal())
-        if run_on < _now(): run_on = run_on + datetime.timedelta(0, 60)
+        if run_on < _now(): run_on = run_on + datetime.timedelta(0, delta)
     elif isinstance(run_on, dt):
         run_on = run_on + datetime.timedelta(0 ,delta)
     return run_on.strftime(fmt)
 
 
 def worker(action, rep_sec, run_on, stop_event):
-    if run_on == 'immediate':
-        run_action(action)
-    else:
-        run_on = calc_run_on(run_on)
-        while not stop_event.is_set():
-            time.sleep(0.2)
-            if _now().strftime('%Y-%m-%d %H:%M:%S') == run_on:
-                # print str(_now())
-                run_on = calc_run_on(run_on, rep_sec)
-                run_action(action)
+    global _run_time # pylint: disable=W0603
+    fmt = '%Y-%m-%d %H:%M:%S'
+    a, b = (_now(), 1) if run_on == 'immediate' else (run_on, 60)
+    run_on = _calc_run_on(a, b)
+    while not stop_event.is_set():
+        if _now().strftime(fmt) == run_on:
+            _run_time = dt.strptime(run_on, fmt)
+            run_action(action)
+            if rep_sec <= 0: break
+            run_on = _calc_run_on(run_on, rep_sec)
+        time.sleep(0.1)
 
 
 def main():
-    global _terminate
-    signal.signal(signal.SIGTERM, handler)
-    signal.signal(signal.SIGTSTP, handler)
-    signal.signal(signal.SIGINT, handler)
+
+    def signal_handler(*args):
+        # Stop threads
+        for se in _stop_events: se.set()
+        global _terminate # pylint: disable=W0603
+        _terminate = True
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGTSTP, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
 
     p = argparse.ArgumentParser(
         description = 'Save data from http://tkm.ibb.gov.tr',
@@ -657,7 +608,8 @@ def main():
             ['-w', '--weather-data',  'save weather data'],
             ['-s', '--static-files',  'save static files'],
             ['-c', '--compress',      'compress old csv files']]
-    for a in args: p.add_argument(a[0], a[1], action=RunCmd, help=a[2])
+    for a in args: p.add_argument(a[0], a[1], action="store_const",
+                                  default=None, const='func', help=a[2])
 
     p.add_argument('-o', '--on', default='immediate',
                    type=str, help='start on time {default: immediate}')
@@ -668,30 +620,23 @@ def main():
 
     threads = []
     for a, v in sorted(vars(args).items()):
-        if hasattr(v, '__call__'):
-            te= threading.Event()
-            threads.append(FuncThread(worker, a, args.rep, args.on, te))
+        if v == 'func':
+            te = threading.Event()
+            threads.append(threading.Thread(target=worker,
+                                            args=[a, args.rep, args.on, te]))
             _stop_events.append(te)
 
     # try to start each thread in same time as far as possible
     for t in threads: t.start()
 
-    while not _terminate: time.sleep(1000)
+    # do not let main thread end soon
+    # this line helps to keep it alive and
+    # catch signals to exit properly.
+    while not _terminate:
+        if not all([t.isAlive() for t in threads]): break
+        time.sleep(10)
 
-    # me = singleton.SingleInstance()
-    # log.info('----------------------------------------------------------')
-    # log.info('Module started')
-
-    # while True:  # make sure process is started when second is zero.
-    #     if _now().second == 0:
-    #         log.info('data acquisition was started')
-    #         save_traffic_data()
-    #         save_traffic_index()
-    #         save_weather_data()
-    #         save_static_files()
-    #         compress_files()
-    #         _check_for_stop()
-    #         break
+    print "Terminated"
 
 # endregion
 
