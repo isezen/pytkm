@@ -322,7 +322,7 @@ def get_traffic_index():
     :rtype: TKM_DATA
     :return: TKM_DATA object
     """
-    return get("traffic-index")
+    return get("traffic_index")
 
 
 def get_traffic_data():
@@ -331,7 +331,7 @@ def get_traffic_data():
     :rtype: TKM_DATA
     :return: TKM_DATA object
     """
-    return get("traffic-data")
+    return get("traffic_data")
 
 
 def get_parking_data():
@@ -340,7 +340,7 @@ def get_parking_data():
     :rtype: TKM_DATA
     :return: TKM_DATA object
     """
-    return get("parking-data")
+    return get("parking_data")
 
 
 def get_announcements():
@@ -358,7 +358,7 @@ def get_weather_data():
     :rtype: TKM_DATA
     :return: TKM_DATA object
     """
-    return get("weather-data")
+    return get("weather_data")
 
 
 def download_static_files(url_list=URL.road + URL.other):

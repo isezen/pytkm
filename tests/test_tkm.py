@@ -66,7 +66,7 @@ def test_tkm_get_filename_with_e_tag():
 
 def test_get_data():
     a, b, c, d = tkm._get_data(_url_not_found)
-    assert isinstance(a, datetime)
+    assert a == -1
     assert b is None
     assert ['notfound', _e_tag, 'csv'] == c.split('.')
     assert d == 'NA'
@@ -74,7 +74,7 @@ def test_get_data():
 
 def test_get_traffic_index():
     a, b, c, d = tkm.get_traffic_index()
-    assert isinstance(a, datetime)
+    assert a == -1
     assert b is None
     assert ['TrafficIndex', _e_tag, 'csv'] == c.split('.')
     assert isinstance(d, str)
@@ -82,7 +82,7 @@ def test_get_traffic_index():
 
 def test_get_traffic_data():
     a, b, c, d = tkm.get_traffic_data()
-    assert isinstance(a, datetime)
+    assert a == -1
     assert b is None
     assert ['TrafficDataNew', _e_tag, 'csv'] == c.split('.')
     assert isinstance(d, str)
@@ -91,7 +91,7 @@ def test_get_traffic_data():
 
 def test_get_parking_data():
     a, b, c, d = tkm.get_parking_data()
-    assert isinstance(a, datetime)
+    assert a == -1
     assert b is None
     assert ['ParkingLotData', _e_tag, 'csv'] == c.split('.')
     assert isinstance(d, str)
@@ -100,7 +100,7 @@ def test_get_parking_data():
 
 def test_get_announcements():
     a, b, c, d = tkm.get_announcements()
-    assert isinstance(a, datetime)
+    assert a == -1
     assert b is None
     assert ['AnnouncementData', _e_tag, 'csv'] == c.split('.')
     assert isinstance(d, str)
@@ -113,7 +113,7 @@ def test_get_announcements():
 def test_get_weather_data():
     # get uniq chars -> ''.join(set(d))
     a, b, c, d = tkm.get_weather_data()
-    assert isinstance(a, datetime)
+    assert a == -1
     assert b is None
     assert ['WeatherData', _e_tag, 'csv'] == c.split('.')
     assert isinstance(d, str)
