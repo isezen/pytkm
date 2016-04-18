@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """This script downloads traffic data from tkm.ibb.gov.tr"""
 
+import argparse
+import signal
 import logging as log
 import os
 from os import path
@@ -13,9 +15,8 @@ import urllib2 as ul
 from collections import namedtuple as nt
 
 from datetime import datetime as dt
+import datetime
 from dateutil import tz
-
-from tendo import singleton
 
 import tkmdecrypt as td
 import compression as c
@@ -30,6 +31,9 @@ logger.root.name = 'tkm.py'
 SENSOR_DATA = nt('SensorData', 'id speed color')
 TKM_DATA = nt('TkmData', 'date e_tag filename data')
 
+_stop_events = []
+_terminate = False
+_run_time = -1
 
 def __init__():
     _dir = nt('DirObject', 'cur data static')(
@@ -212,12 +216,8 @@ def _get_data(url, key=None, decrypt=True):
         url_handle, _last_modified, _e_tag, _f_e_tag = _url \
         if isinstance(_url, tuple) else _urlopen(_url)
 
-        if not _e_tag:  # make sure second = 00
-            t = list(_now().timetuple())
-            t[5] = 0
-            _last_modified = dt.fromtimestamp(
-                time.mktime(
-                    time.struct_time(t))).replace(tzinfo=tz.tzlocal())
+        if not _e_tag:
+            _last_modified = _run_time
 
         if url_handle:
             _data = url_handle.read()
@@ -282,23 +282,38 @@ def _static_file_download(url):
         print info
     return tkmd
 
-
-def _check_for_stop():
-    threading.Timer(10, _check_for_stop).start()
-    f = joinp(DIR.cur, 'killme')
-    if path.exists(f):
-        os.remove(f)
-        # make sure process will be stopped when threads finished.
-        while True:
-            sec = _now().second
-            if 2 < sec < 60:
-                log.info('Module terminated successfully')
-                # noinspection PyProtectedMember
-                os._exit(0)  # pylint: disable=W0212
-
 # endregion
 
 # region public functions
+
+
+def get(t):
+    """ Get data by type
+
+    :t: type of data ['traffic_data', 'traffic_index',
+                      'parking_data', 'announcements', 'weather_data']
+    :return: TKM_DATA object
+    """
+    if t not in ['traffic_data', 'traffic_index',
+                 'parking_data', 'announcements', 'weather_data']:
+        raise ValueError('get_data(t) -> t is not proper option')
+    try:
+        if t == "traffic_data":
+            return _get_data(URL.trafficdata, "62403715")
+        elif t == "traffic_index":
+            return _get_data(URL.trafficindex, "60413275")
+        elif t == "parking_data":
+            return _get_data(URL.parkingdata, "74205136")
+        elif t == "announcements":
+            return _get_data(URL.announcements, "50614732")
+        elif t == "weather_data":
+            return _get_data(URL.weatherdata, "26107354")
+    except Exception as e:  # pylint: disable=W0703
+        err = t + '-> ' + str(e)
+        log.error(err)
+    finally:
+        pass
+    return None
 
 
 def get_traffic_index():
@@ -307,7 +322,7 @@ def get_traffic_index():
     :rtype: TKM_DATA
     :return: TKM_DATA object
     """
-    return _get_data(URL.trafficindex, "60413275")
+    return get("traffic-index")
 
 
 def get_traffic_data():
@@ -316,7 +331,7 @@ def get_traffic_data():
     :rtype: TKM_DATA
     :return: TKM_DATA object
     """
-    return _get_data(URL.trafficdata, "62403715")
+    return get("traffic-data")
 
 
 def get_parking_data():
@@ -325,7 +340,7 @@ def get_parking_data():
     :rtype: TKM_DATA
     :return: TKM_DATA object
     """
-    return _get_data(URL.parkingdata, "74205136")
+    return get("parking-data")
 
 
 def get_announcements():
@@ -334,7 +349,7 @@ def get_announcements():
     :rtype: TKM_DATA
     :return: TKM_DATA object
     """
-    return _get_data(URL.announcements, "50614732")
+    return get("announcements")
 
 
 def get_weather_data():
@@ -343,7 +358,7 @@ def get_weather_data():
     :rtype: TKM_DATA
     :return: TKM_DATA object
     """
-    return _get_data(URL.weatherdata, "26107354")
+    return get("weather-data")
 
 
 def download_static_files(url_list=URL.road + URL.other):
@@ -358,7 +373,6 @@ def download_static_files(url_list=URL.road + URL.other):
     if '_logged' not in globals(): # log once per session
         log.info('All Static Files are up-to-date.')
         globals()['_logged'] = 1
-
 
 
 def download_roads():
@@ -509,14 +523,8 @@ def save_static_files():
         pass
 
 
-def compress_files():
-    """Compresses downloaded data files.
-
-    This function starts a thread.
-    """
-    t = threading.Timer(10800, compress_files)
-    t.daemon = True
-    t.start()
+def _compress_files():
+    """Compresses downloaded data files."""
     lcsv = [f for f in os.listdir(DIR.data) if f.endswith('.csv')]
     today_e_tag = _now().strftime('%Y%m%d')
     for f in lcsv:
@@ -527,21 +535,113 @@ def compress_files():
             os.remove(ff)
 
 
+def compress_files():
+    """Compresses downloaded data files.
+
+    This function starts a thread.
+    """
+    t = threading.Timer(10800, compress_files)
+    t.daemon = True
+    t.start()
+    _compress_files()
+
+
+def run_action(a):
+    actions = ['traffic_data', 'traffic_index', 'parking_data',
+               'announcements', 'weather_data', 'static_files',
+               'compress']
+    if a in actions:
+        if a == "static-files":
+            download_static_files()
+        if a == "compress":
+            _compress_files()
+        else:
+            save_instant_data(get(a))
+    else:
+        raise ValueError('selected action must be one of %s' % str(actions))
+
+
+def _calc_run_on(run_on, delta = 0):
+    fmt = '%Y-%m-%d %H:%M:%S'
+    if isinstance(run_on,str):
+        l = len(run_on)
+        t = _now().strftime(fmt)
+        run_on = t[:-l] + run_on
+        run_on = dt.strptime(run_on, fmt).replace(tzinfo=tz.tzlocal())
+        if run_on < _now(): run_on = run_on + datetime.timedelta(0, delta)
+    elif isinstance(run_on, dt):
+        run_on = run_on + datetime.timedelta(0 ,delta)
+    return run_on.strftime(fmt)
+
+
+def worker(action, rep_sec, run_on, stop_event):
+    global _run_time # pylint: disable=W0603
+    fmt = '%Y-%m-%d %H:%M:%S'
+    a, b = (_now(), 1) if run_on == 'immediate' else (run_on, 60)
+    run_on = _calc_run_on(a, b)
+    while not stop_event.is_set():
+        if _now().strftime(fmt) == run_on:
+            _run_time = dt.strptime(run_on, fmt)
+            run_action(action)
+            if rep_sec <= 0: break
+            run_on = _calc_run_on(run_on, rep_sec)
+        time.sleep(0.1)
+
+
+def main():
+    """Entry point."""
+    def signal_handler(*args): # pylint: disable=W0613
+        """ Handle signals from system."""
+        # Stop threads
+        for se in _stop_events: se.set()
+        global _terminate # pylint: disable=W0603
+        _terminate = True
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGTSTP, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
+    p = argparse.ArgumentParser(
+        description = 'Save data from http://tkm.ibb.gov.tr',
+        epilog = 'Example of use')
+    args = [['-t', '--traffic-data',  'save traffic data'],
+            ['-i', '--traffic-index', 'save traffic index'],
+            ['-p', '--parking-data',  'save parking data'],
+            ['-a', '--announcements', 'save announcements'],
+            ['-w', '--weather-data',  'save weather data'],
+            ['-s', '--static-files',  'save static files'],
+            ['-c', '--compress',      'compress old csv files']]
+    for a in args: p.add_argument(a[0], a[1], action="store_const",
+                                  default=None, const='func', help=a[2])
+
+    p.add_argument('-o', '--on', default='immediate',
+                   type=str, help='start on time {default: immediate}')
+    p.add_argument('-r', '--repeat', default=0, type=int, dest= 'rep',
+                   help='repeat every n seconds after start ' + \
+                   '{default: Do not repat}')
+
+    args = p.parse_args()
+
+    threads = []
+    for a, v in sorted(vars(args).items()):
+        if v == 'func':
+            te = threading.Event()
+            threads.append(threading.Thread(target=worker,
+                                            args=[a, args.rep, args.on, te]))
+            _stop_events.append(te)
+
+    # try to start each thread in same time as far as possible
+    for t in threads: t.start()
+
+    # do not let main thread end soon
+    # this line helps to keep it alive and
+    # catch signals to exit properly.
+    while not _terminate:
+        if not all([t.isAlive() for t in threads]): break
+        time.sleep(10)
+
+    print "Terminated"
+
 # endregion
 
-
 if __name__ == "__main__":
-    me = singleton.SingleInstance()
-    log.info('-------------------------------------------------------------')
-    log.info('Module started')
-
-    while True:  # make sure process is started when second is zero.
-        if _now().second == 0:
-            log.info('data acquisition was started')
-            save_traffic_data()
-            save_traffic_index()
-            save_weather_data()
-            save_static_files()
-            compress_files()
-            _check_for_stop()
-            break
+    main()
