@@ -551,9 +551,9 @@ def run_action(a):
                'announcements', 'weather_data', 'static_files',
                'compress']
     if a in actions:
-        if a == "static-files":
+        if a == "static_files":
             download_static_files()
-        if a == "compress":
+        elif a == "compress":
             _compress_files()
         else:
             save_instant_data(get(a))
@@ -632,6 +632,10 @@ def main():
     # try to start each thread in same time as far as possible
     for t in threads: t.start()
 
+    if args.rep > 0:
+        log.info('----------------------------------------------------------')
+        log.info('Module started in continuous mode')
+
     # do not let main thread end soon
     # this line helps to keep it alive and
     # catch signals to exit properly.
@@ -639,7 +643,7 @@ def main():
         if not all([t.isAlive() for t in threads]): break
         time.sleep(10)
 
-    print "Terminated"
+    if args.rep > 0: log.info('Module terminated gracefully')
 
 # endregion
 
