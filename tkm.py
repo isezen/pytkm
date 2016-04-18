@@ -412,19 +412,6 @@ def roads_are_modified():
     return [file_is_modified(u) for u in URL.road]
 
 
-def _check_refresh_interval(url=URL.trafficdata):
-    """Check refresh interval of URL source.
-
-    :param url: A valid URL
-    """
-    data1 = data2 = ul.urlopen(url).read()
-    t1 = _now()
-    k = 0
-    while data1 == data2: k += 1; data2 = ul.urlopen(url).read()
-    t2 = _now()
-    print t2 - t1, k
-
-
 def parse_speed_data(tkmd):
     """Parse speed data and store the result in a hierarchical list object.
 
@@ -455,75 +442,7 @@ def save_instant_data(tkmd):
     _write_to_file(f, data, tkmd.date)
 
 
-def save_traffic_data():
-    """Download and save traffic data for every 1 minutes.
-
-    This function starts a thread.
-    """
-    t = threading.Timer(60, save_traffic_data)
-    t.daemon = True
-    t.start()
-    try:
-        save_instant_data(get_traffic_data())
-    except Exception as e:  # pylint: disable=W0703
-        err = 'save_traffic_data -> ' + str(e)
-        log.error(err)
-    finally:
-        pass
-
-
-def save_traffic_index():
-    """Download and save traffic index data for every 1 minutes.
-
-    This function starts a thread.
-    """
-    t = threading.Timer(60, save_traffic_index)
-    t.daemon = True
-    t.start()
-    try:
-        save_instant_data(get_traffic_index())
-    except Exception as e:  # pylint: disable=W0703
-        err = 'save_traffic_index -> ' + str(e)
-        log.error(err)
-    finally:
-        pass
-
-
-def save_weather_data():
-    """Download and save weather data for every 1 minutes.
-
-    This function starts a thread.
-    """
-    t = threading.Timer(60, save_weather_data)
-    t.daemon = True
-    t.start()
-    try:
-        save_instant_data(get_weather_data())
-    except Exception as e:  # pylint: disable=W0703
-        err = 'save_weather_data -> ' + str(e)
-        log.error(err)
-    finally:
-        pass
-
-
-def save_static_files():
-    """Download and save static files if modified for every 10 minutes.
-
-    This function starts a thread.
-    """
-    t = threading.Timer(3600, save_static_files)
-    t.daemon = True
-    t.start()
-    try:
-        download_static_files()
-    except Exception as e:  # pylint: disable=W0703
-        err = 'save_static_files -> ' + str(e)
-        log.error(err)
-    finally:
-        pass
-
-
-def _compress_files():
+def compress_files():
     """Compresses downloaded data files."""
     lcsv = [f for f in os.listdir(DIR.data) if f.endswith('.csv')]
     today_e_tag = _now().strftime('%Y%m%d')
@@ -535,46 +454,41 @@ def _compress_files():
             os.remove(ff)
 
 
-def compress_files():
-    """Compresses downloaded data files.
-
-    This function starts a thread.
-    """
-    t = threading.Timer(10800, compress_files)
-    t.daemon = True
-    t.start()
-    _compress_files()
-
-
 def run_action(a):
     actions = ['traffic_data', 'traffic_index', 'parking_data',
                'announcements', 'weather_data', 'static_files',
                'compress']
     if a in actions:
-        if a == "static_files":
-            download_static_files()
-        elif a == "compress":
-            _compress_files()
-        else:
-            save_instant_data(get(a))
+        try:
+            if a == "static_files":
+                download_static_files()
+            elif a == "compress":
+                compress_files()
+            else:
+                save_instant_data(get(a))
+        except Exception as e: # pylint: disable=W0703
+            err = a + ' -> ' + str(e)
+            log.error(err)
+        finally:
+            pass
     else:
         raise ValueError('selected action must be one of %s' % str(actions))
 
 
-def _calc_run_on(run_on, delta = 0):
-    fmt = '%Y-%m-%d %H:%M:%S'
-    if isinstance(run_on,str):
-        l = len(run_on)
-        t = _now().strftime(fmt)
-        run_on = t[:-l] + run_on
-        run_on = dt.strptime(run_on, fmt).replace(tzinfo=tz.tzlocal())
-        if run_on < _now(): run_on = run_on + datetime.timedelta(0, delta)
-    elif isinstance(run_on, dt):
-        run_on = run_on + datetime.timedelta(0 ,delta)
-    return run_on.strftime(fmt)
-
-
 def worker(action, rep_sec, run_on, stop_event):
+
+    def _calc_run_on(run_on, delta = 0):
+        fmt = '%Y-%m-%d %H:%M:%S'
+        if isinstance(run_on,str):
+            l = len(run_on)
+            t = _now().strftime(fmt)
+            run_on = t[:-l] + run_on
+            run_on = dt.strptime(run_on, fmt).replace(tzinfo=tz.tzlocal())
+            if run_on < _now(): run_on = run_on + datetime.timedelta(0, delta)
+        elif isinstance(run_on, dt):
+            run_on = run_on + datetime.timedelta(0 ,delta)
+        return run_on.strftime(fmt)
+
     global _run_time # pylint: disable=W0603
     fmt = '%Y-%m-%d %H:%M:%S'
     a, b = (_now(), 1) if run_on == 'immediate' else (run_on, 60)
