@@ -290,7 +290,8 @@ def _static_file_download(url):
 def get(t):
     """ Get data by type
 
-    :t: type of data ['traffic_data', 'traffic_index', 'parking_data', 'announcements', 'weather_data']
+    :t: type of data ['traffic_data', 'traffic_index',
+                      'parking_data', 'announcements', 'weather_data']
     :return: TKM_DATA object
     """
     if t not in ['traffic_data', 'traffic_index',
@@ -588,8 +589,9 @@ def worker(action, rep_sec, run_on, stop_event):
 
 
 def main():
-
-    def signal_handler(*args):
+    """Entry point."""
+    def signal_handler(*args): # pylint: disable=W0613
+        """ Handle signals from system."""
         # Stop threads
         for se in _stop_events: se.set()
         global _terminate # pylint: disable=W0603
@@ -614,7 +616,8 @@ def main():
     p.add_argument('-o', '--on', default='immediate',
                    type=str, help='start on time {default: immediate}')
     p.add_argument('-r', '--repeat', default=0, type=int, dest= 'rep',
-                   help='repeat every n seconds after start {default: Do not repat}')
+                   help='repeat every n seconds after start ' + \
+                   '{default: Do not repat}')
 
     args = p.parse_args()
 
