@@ -493,6 +493,7 @@ def worker(action, rep_sec, run_on, stop_event):
     fmt = '%Y-%m-%d %H:%M:%S'
     a, b = (_now(), 1) if run_on == 'immediate' else (run_on, 60)
     run_on = _calc_run_on(a, b)
+    log.info("Thread " + action + " started")
     while not stop_event.is_set():
         if _now().strftime(fmt) == run_on:
             _run_time = dt.strptime(run_on, fmt)
@@ -500,6 +501,7 @@ def worker(action, rep_sec, run_on, stop_event):
             if rep_sec <= 0: break
             run_on = _calc_run_on(run_on, rep_sec)
         time.sleep(0.1)
+    log.info("Thread " + action + " stopped")
 
 
 def main():
@@ -543,12 +545,12 @@ def main():
                                             args=[a, args.rep, args.on, te]))
             _stop_events.append(te)
 
-    # try to start each thread in same time as far as possible
-    for t in threads: t.start()
-
     if args.rep > 0:
         log.info('----------------------------------------------------------')
         log.info('Module started in continuous mode')
+
+    # try to start each thread in same time as far as possible
+    for t in threads: t.start()
 
     # do not let main thread end soon
     # this line helps to keep it alive and
