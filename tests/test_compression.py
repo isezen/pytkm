@@ -1,14 +1,16 @@
 #!/usr/bin/python # noqa
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103, C0321, W0212
+# pep8: disable=E702
 """Test module for compression.py"""
 
 import os
 import hashlib
 import tempfile
-import compression as c # pylint: disable=E0401
+import compression as c  # pylint: disable=E0401
 
 _f = 'tests/encrypted.dat'
+
 
 def test_compression():
     """ Test compression and decompression functions """
@@ -24,5 +26,3 @@ def test_compression():
     fd = c.decompress(fc)
     assert f_sha == hashlib.sha256(open(fd, 'rb').read()).hexdigest()
     os.remove(fc); os.remove(fd)
-
-

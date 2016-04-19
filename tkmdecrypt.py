@@ -1,5 +1,6 @@
 #!/usr/bin/python # noqa
 # -*- coding: utf-8 -*-
+# pylint: disable=C0103
 """This is decryption module for tkm.py"""
 
 from array import array
@@ -149,10 +150,10 @@ def decrypt2(encrypted_text):
     :return: Decrypted Text
     """
     # this function is faster for big encrypted_text
-    def f(x):return x - 55 if x > 57 else x - 48
+    def f(x): return x - 55 if x > 57 else x - 48
     f = np.vectorize(f, otypes=[np.uint8])
 
-    ibyte = np.fromstring(encrypted_text, dtype = 'uint8')
+    ibyte = np.fromstring(encrypted_text, dtype='uint8')
     key, c1, c2, l = 3, 6, 3, len(ibyte)
     ii1 = (f(ibyte[c1:l:2]) << 4) + f(ibyte[(c1+1):l:2])
     cc2 = (np.arange(c2, len(ii1)+c2) & 15) + key

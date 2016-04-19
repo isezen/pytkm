@@ -4,7 +4,7 @@
 """Test module for tkmdecrypt.py"""
 
 import os
-import tkmdecrypt as td # pylint: disable=E0401
+import tkmdecrypt as td  # pylint: disable=E0401
 
 _encrypted_traffic_index_data = 'AF199176AE2FC5028302F355B0478735825B0302A' + \
   '274B755277DA566CD6FE6661066C57506660566CC599573A3533645FB5813077D0A1433' + \
