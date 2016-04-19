@@ -34,6 +34,7 @@ TKM_DATA = nt('TkmData', 'date e_tag filename data')
 _stop_events = []
 _terminate = False
 _run_time = -1
+_file_pid = ""
 
 def __init__():
     _dir = nt('DirObject', 'cur data static')(
@@ -99,6 +100,12 @@ def _write_to_file(f, data, last_modified, e_tag=None):
     # change creation and last modified datetime of file.
     os.utime(f, (time.mktime(_now().timetuple()),
                  time.mktime(last_modified.timetuple())))
+
+
+def _create_pid():
+    pidfile = "tkm.pid"
+    file(pidfile, 'w').write(str(os.getpid()))
+    return pidfile
 
 
 def _static_file_write(tkmd):
@@ -549,6 +556,8 @@ def main():
         log.info('----------------------------------------------------------')
         log.info('Module started in continuous mode')
 
+    global _file_pid # pylint: disable=W0603
+    _file_pid = _create_pid()
     # try to start each thread in same time as far as possible
     for t in threads: t.start()
 
@@ -560,6 +569,7 @@ def main():
         time.sleep(10)
 
     if args.rep > 0: log.info('Module terminated gracefully')
+    os.unlink(_file_pid)
 
 # endregion
 

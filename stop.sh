@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
 
-pid=$(pgrep Python ./tkm.py)
-kill -15 "$pid"
+cd /Users/isezen/proj/pytkm
+if [ -f tkm.pid ];then
+  pid="$(<tkm.pid)"
+  kill -15 "$pid"
+fi
+
