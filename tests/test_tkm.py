@@ -1,7 +1,6 @@
 #!/usr/bin/python # noqa
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103
-# pylint: disable=W0212
+# pylint: disable=C0103, W0212
 """Test module for tkm.py"""
 
 import tkm  # pylint: disable=E0401

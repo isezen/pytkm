@@ -1,5 +1,6 @@
 #!/usr/bin/python # noqa
 # -*- coding: utf-8 -*-
+# pylint: disable=C0103, C0321, W0212
 """Test module for tkmdecrypt.py"""
 
 import os
@@ -16,6 +17,7 @@ if os.path.exists(fl):
 
 
 def test_tkmdecrypt__hex_to_str():
+    """ Test _hex_to_str function """
     result = "\xaf\x19\x91v\xae/\xc5\x02\x83\x02\xf3U\xb0G\x87" + \
       "5\x82[\x03\x02\xa2t\xb7U'}\xa5f\xcdo\xe6f\x10f\xc5u\x06f\x05" + \
       "f\xccY\x95s\xa3S6E\xfbX\x13\x07}\n\x143+]\xa5'\x9ax\xe0\x15\x87" + \
@@ -25,6 +27,7 @@ def test_tkmdecrypt__hex_to_str():
 
 
 def test_tkmdecrypt_de_shuffle_hex_str():
+    """ Test _de_shuffle_hex_str function """
     a = '7A1F69190A2E2C5F58035F323B4058770852203B5A725B7462776A5D6C6D6E6F7' + \
       '1605C56606660567C5C39594A5353630F5B7138370D314A225B7A5D197A5E086827' + \
       '4F4872081C545F027A761847712E162160790C'

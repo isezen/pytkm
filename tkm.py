@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# pylint: disable=C0103, C0321, C0330
 """This script downloads traffic data from tkm.ibb.gov.tr"""
 
 import argparse
@@ -35,6 +36,7 @@ _stop_events = []
 _terminate = False
 _run_time = -1
 _file_pid = ""
+
 
 def __init__():
     _dir = nt('DirObject', 'cur data static')(
@@ -178,7 +180,8 @@ def _urlopen(url, k=0):
         file_with_e_tag = _add_e_tag(file_with_e_tag, e_tag)
     else:  # if e_tag value is None, do not trust to last modified date.
         local_last_modified = _now()
-        file_with_e_tag = _add_e_tag(file_with_e_tag, _now().strftime('%Y%m%d'))
+        file_with_e_tag = _add_e_tag(file_with_e_tag,
+                                     _now().strftime('%Y%m%d'))
         file_with_e_tag = path.splitext(file_with_e_tag)[0] + '.csv'
     return url_handle, local_last_modified, e_tag, file_with_e_tag
 
@@ -221,7 +224,7 @@ def _get_data(url, key=None, decrypt=True):
     """
     def _get_data_internal(_url, _key, k=0):
         url_handle, _last_modified, _e_tag, _f_e_tag = _url \
-        if isinstance(_url, tuple) else _urlopen(_url)
+            if isinstance(_url, tuple) else _urlopen(_url)
 
         if not _e_tag:
             _last_modified = _run_time
@@ -230,7 +233,7 @@ def _get_data(url, key=None, decrypt=True):
             _data = url_handle.read()
             if decrypt:
                 _data = td.decrypt0(_data, _key) \
-                if _key else td.decrypt2(_data)
+                    if _key else td.decrypt2(_data)
 
             if _data == 'error' or _data == 'no_data':
                 if k < 5:
@@ -377,7 +380,7 @@ def download_static_files(url_list=URL.road + URL.other):
     """
     if isinstance(url_list, str): url_list = [url_list]
     for u in url_list: _static_file_download(u)
-    if '_logged' not in globals(): # log once per session
+    if '_logged' not in globals():  # log once per session
         log.info('All Static Files are up-to-date.')
         globals()['_logged'] = 1
 
@@ -462,6 +465,7 @@ def compress_files():
 
 
 def run_action(a):
+    """ Run specified action. """
     actions = ['traffic_data', 'traffic_index', 'parking_data',
                'announcements', 'weather_data', 'static_files',
                'compress']
@@ -473,7 +477,7 @@ def run_action(a):
                 compress_files()
             else:
                 save_instant_data(get(a))
-        except Exception as e: # pylint: disable=W0703
+        except Exception as e:  # pylint: disable=W0703
             err = a + ' -> ' + str(e)
             log.error(err)
         finally:
@@ -483,20 +487,20 @@ def run_action(a):
 
 
 def worker(action, rep_sec, run_on, stop_event):
-
-    def _calc_run_on(run_on, delta = 0):
+    """ Thread worker """
+    def _calc_run_on(run_on, delta=0):
         fmt = '%Y-%m-%d %H:%M:%S'
-        if isinstance(run_on,str):
+        if isinstance(run_on, str):
             l = len(run_on)
             t = _now().strftime(fmt)
             run_on = t[:-l] + run_on
             run_on = dt.strptime(run_on, fmt).replace(tzinfo=tz.tzlocal())
             if run_on < _now(): run_on = run_on + datetime.timedelta(0, delta)
         elif isinstance(run_on, dt):
-            run_on = run_on + datetime.timedelta(0 ,delta)
+            run_on = run_on + datetime.timedelta(0, delta)
         return run_on.strftime(fmt)
 
-    global _run_time # pylint: disable=W0603
+    global _run_time  # pylint: disable=W0603
     fmt = '%Y-%m-%d %H:%M:%S'
     a, b = (_now(), 1) if run_on == 'immediate' else (run_on, 60)
     run_on = _calc_run_on(a, b)
@@ -513,33 +517,33 @@ def worker(action, rep_sec, run_on, stop_event):
 
 def main():
     """Entry point."""
-    def signal_handler(*args): # pylint: disable=W0613
+    def signal_handler(*args):  # pylint: disable=W0613
         """ Handle signals from system."""
         # Stop threads
         for se in _stop_events: se.set()
-        global _terminate # pylint: disable=W0603
+        global _terminate  # pylint: disable=W0603
         _terminate = True
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGTSTP, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
 
     p = argparse.ArgumentParser(
-        description = 'Save data from http://tkm.ibb.gov.tr',
-        epilog = 'Example of use')
-    args = [['-t', '--traffic-data',  'save traffic data'],
+        description='Save data from http://tkm.ibb.gov.tr',
+        epilog='Example of use')
+    args = [['-t', '--traffic-data', 'save traffic data'],
             ['-i', '--traffic-index', 'save traffic index'],
-            ['-p', '--parking-data',  'save parking data'],
+            ['-p', '--parking-data', 'save parking data'],
             ['-a', '--announcements', 'save announcements'],
-            ['-w', '--weather-data',  'save weather data'],
-            ['-s', '--static-files',  'save static files'],
-            ['-c', '--compress',      'compress old csv files']]
+            ['-w', '--weather-data', 'save weather data'],
+            ['-s', '--static-files', 'save static files'],
+            ['-c', '--compress', 'compress old csv files']]
     for a in args: p.add_argument(a[0], a[1], action="store_const",
                                   default=None, const='func', help=a[2])
 
     p.add_argument('-o', '--on', default='immediate',
                    type=str, help='start on time {default: immediate}')
-    p.add_argument('-r', '--repeat', default=0, type=int, dest= 'rep',
-                   help='repeat every n seconds after start ' + \
+    p.add_argument('-r', '--repeat', default=0, type=int, dest='rep',
+                   help='repeat every n seconds after start ' +
                    '{default: Do not repat}')
 
     args = p.parse_args()
@@ -556,7 +560,7 @@ def main():
         log.info('----------------------------------------------------------')
         log.info('Module started in continuous mode')
 
-    global _file_pid # pylint: disable=W0603
+    global _file_pid  # pylint: disable=W0603
     _file_pid = _create_pid()
     # try to start each thread in same time as far as possible
     for t in threads: t.start()
