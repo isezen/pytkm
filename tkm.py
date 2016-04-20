@@ -489,6 +489,7 @@ def run_action(a):
 def worker(action, rep_sec, run_on, stop_event):
     """ Thread worker """
     fmt = '%Y-%m-%d %H:%M:%S'
+
     def _calc_run_on(run_on, delta=0):
         if isinstance(run_on, str):
             l = len(run_on)
@@ -544,7 +545,7 @@ def main():
                    type=str, help='start on time {default: immediate}')
     p.add_argument('-r', '--repeat', default=0, type=int, dest='rep',
                    help='repeat every n seconds after start ' +
-                   '{default: Do not repat}')
+                   '{default: Do not repeat}')
 
     args = p.parse_args()
 
