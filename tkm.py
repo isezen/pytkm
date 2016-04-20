@@ -488,20 +488,20 @@ def run_action(a):
 
 def worker(action, rep_sec, run_on, stop_event):
     """ Thread worker """
+    fmt = '%Y-%m-%d %H:%M:%S'
     def _calc_run_on(run_on, delta=0):
-        fmt = '%Y-%m-%d %H:%M:%S'
         if isinstance(run_on, str):
             l = len(run_on)
             t = _now().strftime(fmt)
             run_on = t[:-l] + run_on
             run_on = dt.strptime(run_on, fmt).replace(tzinfo=tz.tzlocal())
-            if run_on < _now(): run_on = run_on + datetime.timedelta(0, delta)
+            while run_on < _now():
+                run_on = run_on + datetime.timedelta(0, delta)
         elif isinstance(run_on, dt):
             run_on = run_on + datetime.timedelta(0, delta)
         return run_on.strftime(fmt)
 
     global _run_time  # pylint: disable=W0603
-    fmt = '%Y-%m-%d %H:%M:%S'
     a, b = (_now(), 1) if run_on == 'immediate' else (run_on, 60)
     run_on = _calc_run_on(a, b)
     log.info("Thread " + action + " started")
