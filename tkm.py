@@ -35,7 +35,7 @@ TKM_DATA = nt('TkmData', 'date e_tag filename data')
 _stop_events = []
 _terminate = False
 _run_time = -1
-_file_pid = ""
+# _file_pid = ""
 
 
 def __init__():
@@ -510,6 +510,7 @@ def worker(action, rep_sec, run_on, stop_event):
             _run_time = dt.strptime(run_on, fmt)
             run_action(action)
             if rep_sec <= 0: break
+            time.sleep(rep_sec * 0.9)
         run_on = _calc_run_on(run_on, rep_sec)
         time.sleep(0.2)
     log.info("Thread " + action + " stopped")
@@ -560,8 +561,8 @@ def main():
         log.info('----------------------------------------------------------')
         log.info('Module started in continuous mode')
 
-    global _file_pid  # pylint: disable=W0603
-    _file_pid = _create_pid()
+    # global _file_pid  # pylint: disable=W0603
+    # _file_pid = _create_pid()
     # try to start each thread in same time as far as possible
     for t in threads: t.start()
 
@@ -573,7 +574,7 @@ def main():
         time.sleep(10)
 
     if args.rep > 0: log.info('Module terminated gracefully')
-    os.unlink(_file_pid)
+    # os.unlink(_file_pid)
 
 # endregion
 
