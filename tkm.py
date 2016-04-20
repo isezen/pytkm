@@ -25,7 +25,7 @@ import compression as c
 # region initial definitions
 
 log.basicConfig(format='%(asctime)s %(levelname)s %(name)s %(message)s',
-                filename='tkm.log', level=log.INFO)
+                filename='tkm.log', level=log.DEBUG)
 logger = log.getLogger(__name__)
 logger.root.name = 'tkm.py'
 
@@ -496,10 +496,9 @@ def worker(action, rep_sec, run_on, stop_event):
             t = _now().strftime(fmt)
             run_on = t[:-l] + run_on
             run_on = dt.strptime(run_on, fmt).replace(tzinfo=tz.tzlocal())
-            while run_on < _now():
-                run_on = run_on + datetime.timedelta(0, delta)
-        elif isinstance(run_on, dt):
+        while run_on < _now():
             run_on = run_on + datetime.timedelta(0, delta)
+            log.debug("run_on=%s" % run_on)
         return run_on.strftime(fmt)
 
     global _run_time  # pylint: disable=W0603
@@ -511,8 +510,8 @@ def worker(action, rep_sec, run_on, stop_event):
             _run_time = dt.strptime(run_on, fmt)
             run_action(action)
             if rep_sec <= 0: break
-            run_on = _calc_run_on(run_on, rep_sec)
-        time.sleep(0.1)
+        run_on = _calc_run_on(run_on, rep_sec)
+        time.sleep(0.2)
     log.info("Thread " + action + " stopped")
 
 
