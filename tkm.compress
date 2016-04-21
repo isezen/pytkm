@@ -4,6 +4,7 @@ cd ~/proj/pytkm
 
 pname='tkm.py -c'
 grep_query="/usr/bin/grep -i '$pname'"
-cmd="/bin/ps -a | $grep_query | /usr/bin/grep -v 'grep' | awk '{print \$1}'"
-pid=$(eval "$cmd")
+cmd="\ps aux | $grep_query | /usr/bin/grep -v 'grep'"
+ret=$(eval "$cmd")
+pid=$(echo "$ret" | awk '{print $2}')
 [ -z "$pid" ] && ./tkm.py -c &
