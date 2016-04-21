@@ -25,7 +25,7 @@ import compression as c
 # region initial definitions
 
 log.basicConfig(format='%(asctime)s %(levelname)s %(name)s %(message)s',
-                filename='tkm.log', level=log.DEBUG)
+                filename='tkm.log', level=log.INFO)
 logger = log.getLogger(__name__)
 logger.root.name = 'tkm.py'
 
