@@ -7,4 +7,5 @@ grep_query="/usr/bin/grep -i '$pname'"
 cmd="\ps aux | $grep_query | /usr/bin/grep -v 'grep'"
 ret=$(eval "$cmd")
 pid=$(echo "$ret" | awk '{print $2}')
-[ -n "$pid" ] && kill -15 "$pid"
+# [[ "$OSTYPE" != "darwin"* ]] && s="-SIGTERM" || s="-SIGTERM"
+[ -n "$pid" ] && kill -SIGTERM "$pid"
