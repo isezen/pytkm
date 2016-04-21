@@ -157,11 +157,10 @@ def _urlopen(url, k=0):
     except Exception as e:
         if k < 5:
             k += 1
-            # log.error('%s -> %s Retrying [%d]', file_with_e_tag, str(e), k)
             return _urlopen(url, k)
         else:
             url_handle = None
-            log.error('%s -> %s STOPPED', file_with_e_tag, str(e))
+            log.error('%s -> %s STOPPED. saved as NA', file_with_e_tag, str(e))
     if url_handle:
         h = url_handle.info()
         # this value changes if file at url is modified
@@ -238,17 +237,15 @@ def _get_data(url, key=None, decrypt=True):
             if _data == 'error' or _data == 'no_data':
                 if k < 5:
                     k += 1
-                    # log.error('Server returned ERROR. Retrying [%d]', [k])
                     (_data, _e_tag, _f_e_tag, _last_modified,
                      k) = _get_data_internal(_url, _key, k)
                 else:
+                    e = "%s returned '%s'. saved as NA"
+                    log.error(e, path.basename(_url), _data)
                     _data = 'NA'
         else:
             _data = 'NA'
 
-        if _data == 'NA':
-            log.error('%s -> Server ERROR. Data was saved as NA',
-                      path.basename(_url))
         return _data, _e_tag, _f_e_tag, _last_modified, k
 
     (data, e_tag, f_e_tag, last_modified, _) = _get_data_internal(url, key)
