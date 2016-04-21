@@ -501,7 +501,7 @@ def worker(action, rep_sec, run_on, stop_event):
     global _run_time  # pylint: disable=W0603
     a, b = (_now(), 1) if run_on == 'immediate' else (run_on, 60)
     run_on = _calc_run_on(a, b)
-    log.info("Thread " + action + " started")
+    if rep_sec > 0: log.info("Thread " + action + " started")
     while not stop_event.is_set():
         if _now().strftime(fmt) == run_on:
             _run_time = dt.strptime(run_on, fmt)
@@ -510,7 +510,7 @@ def worker(action, rep_sec, run_on, stop_event):
             time.sleep(rep_sec * 0.9)
         run_on = _calc_run_on(run_on, rep_sec)
         time.sleep(0.2)
-    log.info("Thread " + action + " stopped")
+    if rep_sec > 0: log.info("Thread " + action + " stopped")
 
 
 def main():
@@ -519,6 +519,7 @@ def main():
         """ Handle signals from system."""
         # Stop threads
         for se in _stop_events: se.set()
+        log.info("Terminating threads")
         global _terminate  # pylint: disable=W0603
         _terminate = True
     signal.signal(signal.SIGTERM, signal_handler)
