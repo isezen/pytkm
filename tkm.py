@@ -39,8 +39,12 @@ _run_time = -1
 
 
 def __init__():
+    if '__file__' in globals():
+        cdir = os.path.dirname(os.path.realpath(__file__))
+    else:
+        cdir = os.getcwd()
     _dir = nt('DirObject', 'cur data static')(
-        *[joinp(os.getcwd(), d) for d in ['', 'database/', 'static_files/']])
+        *[joinp(cdir, d) for d in ['', 'database/', 'static_files/']])
     # pylint: disable=W0106
     [os.makedirs(p) for p in _dir if not path.exists(p)]
     main_url = 'http://tkm.ibb.gov.tr/'
