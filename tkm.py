@@ -108,12 +108,6 @@ def _write_to_file(f, data, last_modified, e_tag=None):
                  time.mktime(last_modified.timetuple())))
 
 
-def _create_pid():
-    pidfile = "tkm.pid"
-    file(pidfile, 'w').write(str(os.getpid()))
-    return pidfile
-
-
 def _static_file_write(tkmd):
     """Write tkmd data to a static file.
 
@@ -523,7 +517,7 @@ def main():
         """ Handle signals from system."""
         # Stop threads
         for se in _stop_events: se.set()
-        log.info("Terminating threads")
+        log.info("Terminating threads...")
         global _terminate  # pylint: disable=W0603
         _terminate = True
     signal.signal(signal.SIGTERM, signal_handler)
@@ -563,20 +557,18 @@ def main():
         log.info('----------------------------------------------------------')
         log.info('Module started in continuous mode')
 
-    # global _file_pid  # pylint: disable=W0603
-    # _file_pid = _create_pid()
     # try to start each thread in same time as far as possible
-    for t in threads: t.start()
+    for t in threads:
+        # t.daemon = True
+        t.start()
 
     # do not let main thread end soon
     # this line helps to keep it alive and
     # catch signals to exit properly.
-    while not _terminate:
-        if not all([t.isAlive() for t in threads]): break
+    while not _terminate or all([t.isAlive() for t in threads]):
         time.sleep(10)
 
     if args.rep > 0: log.info('Module terminated gracefully')
-    # os.unlink(_file_pid)
 
 # endregion
 
